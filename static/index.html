@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <!-- Display: Major Mono Display (departure-board, brutalist clock vibe).
+       Body: IBM Plex Mono (technical, readable at glance).
+       Hebrew: Frank Ruhl Libre (elegant, traditional). -->
+  <link href="https://fonts.googleapis.com/css2?family=Major+Mono+Display&family=IBM+Plex+Mono:wght@300;400;500;600&family=Frank+Ruhl+Libre:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --fg: #f4f1ea;        /* warm off-white */
+      --dim: #6b6863;
+      --accent: #d4a574;    /* warm amber (active Shabbat) */
+      --accent-cool: #7a9b8e;  /* cool sage (default) */
+      --rule: rgba(244, 241, 234, 0.12);
+      --bus-tag: #c47d5a;   /* warm rust for bus routes */
+      --train-bg-default: #6b6863;
+    }
+    /* Subway line official colors (for the round route bullets) */
+    :root {
+      --line-1: #ee352e;
+      --line-2: #ee352e;
+      --line-3: #ee352e;
+      --line-4: #00933c;
+      --line-5: #00933c;
+      --line-6: #00933c;
+      --line-7: #b933ad;
+      --line-A: #0039a6;
+      --line-C: #0039a6;
+      --line-E: #0039a6;
+      --line-B: #ff6319;
+      --line-D: #ff6319;
+      --line-F: #ff6319;
+      --line-M: #ff6319;
+      --line-G: #6cbe45;
+      --line-J: #996633;
+      --line-Z: #996633;
+      --line-L: #a7a9ac;
+      --line-N: #fccc0a;
+      --line-Q: #fccc0a;
+      --line-R: #fccc0a;
+      --line-W: #fccc0a;
+      --line-SI: #2850ad;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: 'IBM Plex Mono', monospace;
+      font-weight: 400;
+      overflow: hidden;
+      letter-spacing: 0.01em;
+    }
+
+    /* Subtle paper-grain background */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image:
+        radial-gradient(circle at 20% 30%, rgba(212, 165, 116, 0.03) 0%, transparent 50%),
+        radial-gradient(circle at 80% 70%, rgba(122, 155, 142, 0.025) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .dashboard {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 1fr 1.4fr 1fr;
+      height: 100vh;
+      padding: 2.5vh 2.5vw;
+      gap: 2vw;
+    }
+
+    /* === Side columns (transit) === */
+    .transit-col {
+      display: flex;
+      flex-direction: column;
+      gap: 1.2em;
+      overflow: hidden;
+    }
+
+    .col-header {
+      font-family: 'Major Mono Display', monospace;
+      font-size: 0.95em;
+      letter-spacing: 0.2em;
+      color: var(--dim);
+      text-transform: lowercase;
+      padding-bottom: 0.5em;
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .stop-block {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5em;
+    }
+
+    .stop-name {
+      font-size: 1.05em;
+      font-weight: 500;
+      color: var(--fg);
+      letter-spacing: 0.04em;
+      line-height: 1.2;
+    }
+
+    .stop-sub {
+      font-size: 0.75em;
+      color: var(--dim);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .route-row {
+      display: flex;
+      align-items: center;
+      gap: 0.8em;
+      padding: 0.45em 0;
+      border-bottom: 1px dashed var(--rule);
+    }
+    .route-row:last-child { border-bottom: none; }
+
+    /* Subway route bullet — round, like the MTA does it */
+    .route-bullet {
+      flex-shrink: 0;
+      width: 2.1em;
+      height: 2.1em;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'IBM Plex Mono', monospace;
+      font-weight: 600;
+      font-size: 1.1em;
+      color: #000;
+      background: var(--train-bg-default);
+    }
+    .route-bullet.train { /* color via inline style from JS */ }
+    .route-bullet.train.light-text { color: #fff; }
+
+    /* Bus route tag — rectangular, distinct from train */
+    .route-bullet.bus {
+      width: auto;
+      min-width: 2.5em;
+      height: 1.8em;
+      border-radius: 4px;
+      background: transparent;
+      color: var(--bus-tag);
+      border: 1.5px solid var(--bus-tag);
+      font-size: 0.95em;
+      padding: 0 0.5em;
+    }
+
+    .route-direction {
+      font-size: 1.0em;
+      color: var(--dim);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      min-width: 1.5em;
+    }
+
+    .arrivals {
+      margin-left: auto;
+      display: flex;
+      gap: 0.5em;
+      align-items: baseline;
+    }
+
+    .arrival-mins {
+      font-size: 1.5em;
+      font-weight: 400;
+      font-variant-numeric: tabular-nums;
+      color: var(--fg);
+    }
+
+    .arrival-mins .unit {
+      font-size: 0.55em;
+      color: var(--dim);
+      margin-left: 0.1em;
+      letter-spacing: 0.1em;
+    }
+
+    .arrival-mins.imminent { color: var(--accent); }
+    .arrival-mins.separator { color: var(--dim); font-weight: 300; }
+
+    .no-data {
+      color: var(--dim);
+      font-size: 0.85em;
+      font-style: italic;
+      letter-spacing: 0.05em;
+    }
+
+    /* === Center column === */
+    .center-col {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 3vh;
+      border-left: 1px solid var(--rule);
+      border-right: 1px solid var(--rule);
+      padding: 0 2vw;
+    }
+
+    .clock {
+      font-family: 'Major Mono Display', monospace;
+      font-size: clamp(6em, 18vw, 14em);
+      font-weight: 400;
+      letter-spacing: -0.04em;
+      line-height: 0.85;
+      color: var(--fg);
+      font-variant-numeric: tabular-nums;
+      text-align: center;
+    }
+
+    .clock .colon {
+      animation: blink 2s ease-in-out infinite;
+    }
+    @keyframes blink {
+      0%, 50% { opacity: 1; }
+      75% { opacity: 0.3; }
+      100% { opacity: 1; }
+    }
+
+    .date-line {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.95em;
+      color: var(--dim);
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+    }
+
+    /* === Shabbat block === */
+    .shabbat-block {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.8em;
+      min-height: 7em;
+      padding: 1.5em 2em;
+      border: 1px solid var(--rule);
+      border-radius: 2px;
+      max-width: 90%;
+      width: 100%;
+      transition: border-color 0.6s ease, background-color 0.6s ease;
+    }
+
+    .shabbat-block.active {
+      border-color: var(--accent);
+      background: rgba(212, 165, 116, 0.04);
+    }
+    .shabbat-block.approaching {
+      border-color: rgba(212, 165, 116, 0.3);
+    }
+
+    .shabbat-label {
+      font-family: 'Major Mono Display', monospace;
+      font-size: 0.85em;
+      letter-spacing: 0.25em;
+      color: var(--dim);
+      text-transform: lowercase;
+    }
+    .shabbat-block.active .shabbat-label,
+    .shabbat-block.approaching .shabbat-label {
+      color: var(--accent);
+    }
+
+    .parsha {
+      font-family: 'Frank Ruhl Libre', serif;
+      font-size: 1.6em;
+      font-weight: 500;
+      color: var(--fg);
+      text-align: center;
+      letter-spacing: 0.02em;
+    }
+    .parsha-hebrew {
+      font-family: 'Frank Ruhl Libre', serif;
+      font-size: 1.4em;
+      color: var(--dim);
+      direction: rtl;
+    }
+    .shabbat-block.active .parsha-hebrew {
+      color: var(--accent);
+      opacity: 0.85;
+    }
+
+    .shabbat-time-row {
+      display: flex;
+      gap: 1em;
+      align-items: baseline;
+      font-size: 0.95em;
+      color: var(--fg);
+      letter-spacing: 0.04em;
+    }
+    .shabbat-time-row .label {
+      color: var(--dim);
+      font-size: 0.8em;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+    .shabbat-time-row .time {
+      font-variant-numeric: tabular-nums;
+      font-weight: 500;
+    }
+
+    /* === Status indicator (subtle, bottom corner) === */
+    .status {
+      position: fixed;
+      bottom: 1.2em;
+      right: 1.5em;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.6em;
+      color: var(--dim);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      opacity: 0.5;
+      transition: opacity 0.3s ease;
+      z-index: 10;
+    }
+    .status.error {
+      color: #c47d5a;
+      opacity: 0.9;
+    }
+    .status::before {
+      content: "●";
+      margin-right: 0.5em;
+      color: var(--accent-cool);
+    }
+    .status.error::before { color: #c47d5a; }
+
+    /* === Weather widget === */
+    .weather-block {
+      margin-top: auto;   /* stick to the bottom of the left column */
+      padding-top: 1.2em;
+      border-top: 1px solid var(--rule);
+      display: flex;
+      flex-direction: column;
+      gap: 0.4em;
+    }
+    .weather-current {
+      display: flex;
+      align-items: center;
+      gap: 0.6em;
+    }
+    .weather-emoji {
+      font-size: 3.6em;
+      line-height: 1;
+    }
+    .weather-temp {
+      /*font-family: 'Major Mono Display', monospace;*/
+      font-size: 2.4em;
+      line-height: 1;
+    }
+    .weather-hilo {
+      font-size: 1.1em;
+      color: var(--dim);
+      letter-spacing: 0.05em;
+    }
+    .weather-precip {
+      font-size: 1em;
+      color: var(--accent);
+      font-style: italic;
+    }
+
+    /* Pulse on data update */
+    @keyframes pulse {
+      0% { background-color: rgba(244, 241, 234, 0); }
+      30% { background-color: rgba(244, 241, 234, 0.02); }
+      100% { background-color: rgba(244, 241, 234, 0); }
+    }
+    .pulse { animation: pulse 0.8s ease-out; }
+  </style>
+</head>
+<body>
+  <div class="dashboard" id="dashboard">
+    <!-- LEFT: buses -->
+    <div class="transit-col" id="bus-col">
+      <div class="col-header">buses</div>
+      <div id="bus-content"></div>
+      <div class="weather-block" id="weather-block"></div>
+    </div>
+
+    <!-- CENTER: clock + Shabbat -->
+    <div class="center-col">
+      <div class="clock" id="clock">--:--</div>
+      <div class="date-line" id="date-line">—</div>
+      <div class="shabbat-block" id="shabbat-block">
+        <div class="shabbat-label" id="shabbat-label">—</div>
+      </div>
+    </div>
+
+    <!-- RIGHT: trains -->
+    <div class="transit-col" id="train-col">
+      <div class="col-header">trains</div>
+      <div id="train-content"></div>
+    </div>
+  </div>
+
+  <div class="status" id="status">connecting…</div>
+
+  <script>
+    // === State ===
+    // serverEpochMs: the server's notion of "now" in unix ms, captured at lastSync.
+    // localEpochMs: performance.now() at the moment we captured it.
+    // We compute display time as serverEpochMs + (performance.now() - localEpochMs).
+    let serverEpochMs = null;
+    let localEpochMs = null;
+    let lastData = null;
+
+    const POLL_INTERVAL_MS = 15000;
+
+    // === Subway route bullet helpers ===
+    const LIGHT_BG_LINES = new Set(['N', 'Q', 'R', 'W', 'L']); // yellow/gray need dark text
+    function routeBulletStyle(route) {
+      const bg = getComputedStyle(document.documentElement)
+        .getPropertyValue(`--line-${route}`).trim();
+      return bg || '';
+    }
+    function isLightBg(route) {
+      // For yellow/gray, use dark text; everything else gets white-ish via .light-text
+      return !LIGHT_BG_LINES.has(route);
+    }
+
+    // === Time helpers ===
+    function currentDisplayDate() {
+      if (serverEpochMs === null) return new Date();
+      const elapsed = performance.now() - localEpochMs;
+      return new Date(serverEpochMs + elapsed);
+    }
+
+    function formatClock(d) {
+      let h = d.getHours();
+      const m = d.getMinutes();
+      // 12-hour format, no leading zero on hour
+      const hh = ((h + 11) % 12) + 1;
+      return `${hh}<span class="colon">:</span>${String(m).padStart(2, '0')}`;
+    }
+
+    function formatTimeShort(isoStr) {
+      const d = new Date(isoStr);
+      let h = d.getHours();
+      const m = d.getMinutes();
+      const ampm = h >= 12 ? 'pm' : 'am';
+      h = ((h + 11) % 12) + 1;
+      return `${h}:${String(m).padStart(2, '0')}${ampm}`;
+    }
+
+    function formatTimeWithDay(isoStr) {
+      // Like formatTimeShort, but prefixes a weekday name (e.g. "Fri 7:48pm")
+      // when the event isn't today. Uses the server-synced clock so it stays
+      // correct on a tablet that's been on for days.
+      const d = new Date(isoStr);
+      const nowMs = serverEpochMs + (performance.now() - localEpochMs);
+      const today = new Date(nowMs);
+      const sameDay = d.getFullYear() === today.getFullYear()
+        && d.getMonth() === today.getMonth()
+        && d.getDate() === today.getDate();
+      const time = formatTimeShort(isoStr);
+      if (sameDay) return time;
+      const weekday = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];
+      return `${weekday} ${time}`;
+    }
+
+    function formatDateLine(d) {
+      const weekday = ['SUN','MON','TUE','WED','THU','FRI','SAT'][d.getDay()];
+      const month = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'][d.getMonth()];
+      const parts = [`${weekday} · ${month} ${d.getDate()}`];
+
+      // Hebrew date: "1st of Sivan, 5786" -> "1 SIVAN" (drop year, strip ordinal suffix)
+      const ht = lastData && lastData.hebrew_today;
+      if (ht && ht.title) {
+        const m = ht.title.match(/^(\d+)(?:st|nd|rd|th)?\s+of\s+([^,]+)/i);
+        if (m) {
+          parts.push(`${m[1]} ${m[2].trim().toUpperCase()}`);
+        } else {
+          parts.push(ht.title.toUpperCase());
+        }
+      }
+
+      // Omer: "33rd day of the Omer" -> "33RD OMER"
+      if (ht && ht.omer_day) {
+        const suffix = ordinalSuffix(ht.omer_day);
+        parts.push(`${ht.omer_day}${suffix} OMER`);
+      }
+
+      return parts.join(' · ');
+    }
+
+    function ordinalSuffix(n) {
+      const mod100 = n % 100;
+      if (mod100 >= 11 && mod100 <= 13) return 'TH';
+      switch (n % 10) {
+        case 1: return 'ST';
+        case 2: return 'ND';
+        case 3: return 'RD';
+        default: return 'TH';
+      }
+    }
+
+    // === Render ===
+    function renderClock() {
+      const d = currentDisplayDate();
+      document.getElementById('clock').innerHTML = formatClock(d);
+      document.getElementById('date-line').textContent = formatDateLine(d);
+    }
+
+    function renderArrivalsList(arrivals) {
+      if (!arrivals.length) {
+        return '<span class="no-data">no arrivals</span>';
+      }
+      return arrivals.map((a, i) => {
+        const cls = a.minutes <= 2 ? 'imminent' : '';
+        const sep = i > 0 ? '<span class="arrival-mins separator">·</span>' : '';
+        return `${sep}<span class="arrival-mins ${cls}">${a.minutes}<span class="unit">m</span></span>`;
+      }).join(' ');
+    }
+
+    function renderTrains(stations) {
+      if (!stations.length) {
+        return '<div class="no-data">no stations configured</div>';
+      }
+      return stations.map(station => {
+        const routesHtml = station.routes.map(r => {
+          const dirLabel = r.direction === 'N' ? '↑' : (r.direction === 'S' ? '↓' : '');
+          const bg = routeBulletStyle(r.route);
+          const textCls = isLightBg(r.route) ? 'light-text' : '';
+          return `
+            <div class="route-row">
+              <div class="route-bullet train ${textCls}" style="background-color: ${bg}">${r.route}</div>
+              <div class="route-direction">${dirLabel}</div>
+              <div class="arrivals">${renderArrivalsList(r.arrivals)}</div>
+            </div>
+          `;
+        }).join('');
+
+        return `
+          <div class="stop-block">
+            <div class="stop-name">${station.name}</div>
+            ${routesHtml || '<div class="no-data">no arrivals</div>'}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderBuses(stops) {
+      if (!stops.length) {
+        return '<div class="no-data">no stops configured</div>';
+      }
+      return stops.map(stop => {
+        const routesHtml = stop.routes.map(r => `
+          <div class="route-row">
+            <div class="route-bullet bus">${r.route}</div>
+            <div class="arrivals">${renderArrivalsList(r.arrivals)}</div>
+          </div>
+        `).join('');
+
+        return `
+          <div class="stop-block">
+            <div class="stop-name">${stop.label}</div>
+            ${routesHtml || '<div class="no-data">no arrivals</div>'}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderShabbat(s) {
+      const block = document.getElementById('shabbat-block');
+      block.className = 'shabbat-block';
+      if (s.phase === 'active') block.classList.add('active');
+      else if (s.phase === 'approaching') block.classList.add('approaching');
+
+      let html = '';
+      const label = s.observance_label || 'Shabbat';
+      html += `<div class="shabbat-label">${label.toLowerCase()}</div>`;
+
+      if (s.parsha) {
+        html += `<div class="parsha">${s.parsha.name}</div>`;
+        if (s.parsha.hebrew) {
+          html += `<div class="parsha-hebrew">${s.parsha.hebrew}</div>`;
+        }
+      }
+
+      // Time rows: show candle lighting and havdalah depending on phase
+      if (s.phase === 'active' && s.next_havdalah) {
+        html += `
+          <div class="shabbat-time-row">
+            <span class="label">Havdalah</span>
+            <span class="time">${formatTimeWithDay(s.next_havdalah.when)}</span>
+          </div>
+        `;
+      } else if (s.next_candles) {
+        html += `
+          <div class="shabbat-time-row">
+            <span class="label">Candles</span>
+            <span class="time">${formatTimeWithDay(s.next_candles.when)}</span>
+          </div>
+        `;
+      }
+
+      block.innerHTML = html;
+    }
+
+    function renderWeather(w) {
+      const block = document.getElementById('weather-block');
+      if (w.current_temp == null && w.high == null) {
+        block.innerHTML = '';
+        return;
+      }
+      const unit = (w.units === 'celsius') ? '°C' : '°F';
+      const round = (x) => (x == null ? '—' : Math.round(x));
+      let html = `
+        <div class="weather-current">
+          <span class="weather-emoji">${w.current_emoji || ''}</span>
+          <span class="weather-temp">${round(w.current_temp)}${unit}</span>
+        </div>
+        <div class="weather-hilo">H ${round(w.high)}${unit} · L ${round(w.low)}${unit}</div>
+      `;
+      if (w.precip_likely) {
+        const pct = w.precip_probability_today;
+        html += `<div class="weather-precip">☔ ${pct}% chance of precip today</div>`;
+      }
+      block.innerHTML = html;
+    }
+
+    function setStatus(text, isError = false) {
+      const el = document.getElementById('status');
+      el.textContent = text;
+      el.classList.toggle('error', isError);
+    }
+
+    function renderAll(data) {
+      lastData = data;
+      // Sync server time
+      serverEpochMs = new Date(data.server_time).getTime();
+      localEpochMs = performance.now();
+
+      document.getElementById('train-content').innerHTML = renderTrains(data.subway_stations || []);
+      document.getElementById('bus-content').innerHTML = renderBuses(data.bus_stops || []);
+      renderShabbat(data.shabbat || {});
+      renderWeather(data.weather || {});
+
+      // Pulse to indicate fresh data
+      const dash = document.getElementById('dashboard');
+      dash.classList.remove('pulse');
+      void dash.offsetWidth; // restart animation
+      dash.classList.add('pulse');
+
+      const now = new Date();
+      setStatus(`updated ${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`);
+    }
+
+    // === Polling ===
+    async function fetchData() {
+      try {
+        const resp = await fetch('/api/data');
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const data = await resp.json();
+        renderAll(data);
+      } catch (e) {
+        console.error('Fetch failed:', e);
+        setStatus('offline — retrying', true);
+      }
+    }
+
+    // Initial + scheduled fetches
+    fetchData();
+    setInterval(fetchData, POLL_INTERVAL_MS);
+
+    // Clock tick (every 200ms is overkill but keeps it crisp)
+    setInterval(renderClock, 200);
+    renderClock();
+  </script>
+</body>
+</html>

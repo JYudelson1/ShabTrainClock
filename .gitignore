@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+
+# uv
+.uv/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Local config (don't commit API keys!)
+config.yaml
+
+# OS
+.DS_Store
