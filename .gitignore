@@ -15,8 +15,5 @@ build/
 .idea/
 *.swp
 
-# Local config (don't commit API keys!)
-config.yaml
-
 # OS
 .DS_Store

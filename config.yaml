@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=./config.schema.json
+# Wall dashboard config.
+
+# === Location (for Shabbat times) ===
+location:
+  # Used by Hebcal. Use a Hebcal geonameid or zip code.
+  # Brooklyn = 5110302, Manhattan = 5128581
+  # See: https://www.hebcal.com/home/195/jewish-calendar-rest-api
+  geonameid: 5110302
+  timezone: "America/New_York"
+  # Used by the weather widget (Open-Meteo, no API key required).
+  latitude: 40.6712
+  longitude: -73.9442
+
+# === Weather ===
+weather:
+  units: "fahrenheit"   # or "celsius"
+  # If today's max precip probability >= this %, show a "rain today" line.
+  precip_probability_threshold: 40
+
+# === Display preferences ===
+display:
+  # How many arrivals to show per route
+  max_arrivals_per_route: 2
+  # Don't show arrivals further out than this (minutes)
+  max_minutes_out: 60
+  # Hide arrivals closer than this (the bus is leaving NOW, won't catch it)
+  min_minutes_out: 1
+
+# === Secrets ===
+# Bus API key is read from the MTA_BUS_API_KEY env var.
+# Set it in LocalServerApps/.env (shared across sites, gitignored).
+
+# === Subway stations to monitor ===
+# Each station: a human-readable name (fuzzy-matched against MTA's stop names)
+# and which routes/directions you care about.
+# Direction: "N" (uptown/Manhattan-bound) or "S" (downtown/Brooklyn-bound)
+# or "both" to show both.
+subway_stations:
+  - name: "Nostrand Ave"  # will fuzzy-match e.g. "Nostrand Avenue"
+    routes: ["3", "A", "C", "E"]
+    direction: "N"
+
+  # Add more stations as desired:
+  - name: "Franklin Avenue Medgar Evers College"
+    routes: ["2", "3", "4", "5"]
+    direction: "N"
+
+# === Bus stops to monitor ===
+# Each stop: an MTA stop code (the 4-6 digit number on the bus stop sign,
+# e.g. "305423") and which lines you care about.
+# You can find stop codes at https://bustime.mta.info/ by searching your stop.
+bus_stops:
+  - stop_code: "901280"   # example: a stop near St John's & Rogers
+    label: "St John's & Rogers"
+    routes: ["B44", "B44-SBS"]
+
+  # Add more stops as desired. Note: each MTA stop_code is curb/direction-
+  # specific, so to monitor both directions add a second entry with the
+  # other side's stop_code.
+  # - stop_code: "308214"
+  #   label: "NB-44 @ St John's & Rogers"
+  #   routes: ["B44"]

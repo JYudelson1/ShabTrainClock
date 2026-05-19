@@ -13,6 +13,7 @@ dependencies = [
     "rapidfuzz>=3.10",
     "pydantic>=2.9",
     "astral>=3.2",
+    "python-dotenv>=1.0",
 ]
 
 [build-system]

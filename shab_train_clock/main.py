@@ -4,14 +4,21 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+from dotenv import find_dotenv, load_dotenv
 from fastapi import FastAPI
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+
+# Load env from the nearest .env walking up parent dirs. This lets a single
+# shared LocalServerApps/.env supply secrets to any site nested under it.
+# usecwd=True so it searches from CWD rather than this file's path.
+load_dotenv(find_dotenv(usecwd=True))
 
 from .bus import BusClient
 from .config import Config, load_config
@@ -38,7 +45,9 @@ class AppState:
         self.config = config
         self.tz = ZoneInfo(config.location.timezone)
         self.subway = SubwayClient()
-        self.bus = BusClient(config.mta_bus_api_key)
+        # MTA bus key comes from the shared LocalServerApps/.env file
+        # (loaded above via dotenv).
+        self.bus = BusClient(os.environ.get("MTA_BUS_API_KEY", ""))
         self.hebcal = HebcalClient(
             geonameid=config.location.geonameid,
             timezone_name=config.location.timezone,

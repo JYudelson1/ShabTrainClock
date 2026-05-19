@@ -46,7 +46,6 @@ class Config(BaseModel):
     location: LocationConfig = Field(default_factory=LocationConfig)
     display: DisplayConfig = Field(default_factory=DisplayConfig)
     weather: WeatherConfig = Field(default_factory=WeatherConfig)
-    mta_bus_api_key: str = ""
     subway_stations: list[SubwayStationConfig] = Field(default_factory=list)
     bus_stops: list[BusStopConfig] = Field(default_factory=list)
 

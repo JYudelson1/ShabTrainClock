@@ -34,7 +34,10 @@ uv sync
 
 # Get a free MTA Bus API key:
 # https://register.developer.obanyc.com/
-# Then put it in config.yaml
+# Then add it to ../../.env (LocalServerApps/.env) as
+#   MTA_BUS_API_KEY=...
+# This .env is shared across all sites under LocalServerApps/ and is
+# gitignored. python-dotenv walks parent dirs to find it.
 
 # Edit config.yaml with your stops/stations
 

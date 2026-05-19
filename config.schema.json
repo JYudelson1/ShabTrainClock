@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/JYudelson1/ShabTrainClock/config.schema.json",
+  "title": "ShabTrainClock config",
+  "type": "object",
+  "$defs": {
+    "LocationConfig": {
+      "type": "object",
+      "properties": {
+        "geonameid": { "type": "integer", "default": 5110302 },
+        "timezone": { "type": "string", "default": "America/New_York" },
+        "latitude": { "type": "number", "default": 40.6712 },
+        "longitude": { "type": "number", "default": -73.9442 }
+      },
+      "additionalProperties": false
+    },
+    "WeatherConfig": {
+      "type": "object",
+      "properties": {
+        "units": { "type": "string", "enum": ["fahrenheit", "celsius"], "default": "fahrenheit" },
+        "precip_probability_threshold": { "type": "integer", "default": 40 }
+      },
+      "additionalProperties": false
+    },
+    "DisplayConfig": {
+      "type": "object",
+      "properties": {
+        "max_arrivals_per_route": { "type": "integer", "default": 2 },
+        "max_minutes_out": { "type": "integer", "default": 60 },
+        "min_minutes_out": { "type": "integer", "default": 1 }
+      },
+      "additionalProperties": false
+    },
+    "SubwayStationConfig": {
+      "type": "object",
+      "required": ["name", "routes"],
+      "properties": {
+        "name": { "type": "string" },
+        "routes": { "type": "array", "items": { "type": "string" } },
+        "direction": { "type": "string", "enum": ["N", "S", "both"], "default": "both" }
+      },
+      "additionalProperties": false
+    },
+    "BusStopConfig": {
+      "type": "object",
+      "required": ["stop_code", "label"],
+      "properties": {
+        "stop_code": { "type": "string" },
+        "label": { "type": "string" },
+        "routes": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    }
+  },
+  "properties": {
+    "location": { "$ref": "#/$defs/LocationConfig" },
+    "weather": { "$ref": "#/$defs/WeatherConfig" },
+    "display": { "$ref": "#/$defs/DisplayConfig" },
+    "mta_bus_api_key": { "type": "string" },
+    "subway_stations": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/SubwayStationConfig" }
+    },
+    "bus_stops": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/BusStopConfig" }
+    }
+  },
+  "additionalProperties": false
+}
