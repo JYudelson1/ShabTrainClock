@@ -16,7 +16,9 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
-SIRI_URL = "https://bustime.mta.info/api/siri/stop-monitoring.json"
+# MTA migrated the bus SIRI API off bustime.mta.info (now edge-blocks /api/*
+# with a 403) to bustime-classic.mta.info. Same path, same key/params.
+SIRI_URL = "https://bustime-classic.mta.info/api/siri/stop-monitoring.json"
 
 
 @dataclass
