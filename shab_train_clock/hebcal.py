@@ -247,6 +247,7 @@ class HebcalClient:
         next_candles = None
         next_havdalah = None
         last_candles = None
+        last_event = None  # most recent past event of EITHER kind
 
         for ev in self._events:
             if ev.when > now:
@@ -255,15 +256,18 @@ class HebcalClient:
                 elif ev.kind == "havdalah" and next_havdalah is None:
                     next_havdalah = ev
             else:
+                last_event = ev  # events are sorted ascending
                 if ev.kind == "candles":
                     last_candles = ev  # keep updating to get the most recent
 
-        # Determine phase: are we currently between candles and havdalah?
-        active = False
-        if last_candles and next_havdalah:
-            # We had a recent candle lighting and havdalah is still upcoming
-            if last_candles.when < now < next_havdalah.when:
-                active = True
+        # We're in Shabbat/yom tov iff the most recent past event is a candle
+        # lighting (i.e. we've lit but not yet reached havdalah). Checking the
+        # most recent event of *either* kind — rather than just the last
+        # candle — correctly excludes chol hamoed and motzei Shabbat, where a
+        # havdalah is the more recent event. Hebcal emits a candle event each
+        # evening of a multi-day yom tov, so continuous YT+Shabbat blocks stay
+        # active throughout.
+        active = last_event is not None and last_event.kind == "candles"
 
         if active:
             phase = "active"

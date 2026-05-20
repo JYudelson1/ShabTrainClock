@@ -76,10 +76,24 @@
       position: relative;
       z-index: 1;
       display: grid;
-      grid-template-columns: 1fr 1.4fr 1fr;
+      grid-template-columns: 1fr 3fr 1fr;
       height: 100vh;
       padding: 2.5vh 2.5vw;
       gap: 2vw;
+    }
+
+    /* During Shabbat / yom tov (no transit), hide the bus + train columns
+       and let the clock + Shabbat block fill the screen. */
+    .dashboard.transit-hidden {
+      grid-template-columns: 1fr;
+    }
+    .dashboard.transit-hidden #bus-col,
+    .dashboard.transit-hidden #train-col {
+      display: none;
+    }
+    .dashboard.transit-hidden .center-col {
+      border-left: none;
+      border-right: none;
     }
 
     /* === Side columns (transit) === */
@@ -177,7 +191,7 @@
     }
 
     .arrival-mins {
-      font-size: 1.5em;
+      font-size: 1.9em;
       font-weight: 400;
       font-variant-numeric: tabular-nums;
       color: var(--fg);
@@ -210,11 +224,19 @@
       border-left: 1px solid var(--rule);
       border-right: 1px solid var(--rule);
       padding: 0 2vw;
+      /* min-width:0 lets this column shrink below the clock's intrinsic
+         width, so the grid fr ratios actually govern column widths.
+         container-type makes the clock size off THIS column's width (cqw)
+         rather than the viewport, so it auto-fits whatever fr we choose. */
+      min-width: 0;
+      container-type: inline-size;
     }
 
     .clock {
       font-family: 'Major Mono Display', monospace;
-      font-size: clamp(6em, 18vw, 14em);
+      /* 30cqw ≈ fills the center column ("HH:MM" is ~3.2 char-widths wide).
+         clamp keeps it sane if the column gets very narrow or very wide. */
+      font-size: clamp(3em, 30cqw, 14em);
       font-weight: 400;
       letter-spacing: -0.04em;
       line-height: 0.85;
@@ -652,6 +674,10 @@
 
       // Pulse to indicate fresh data
       const dash = document.getElementById('dashboard');
+
+      // Hide transit columns during Shabbat / yom tov (no transit permitted).
+      const noTransit = (data.shabbat && data.shabbat.phase === 'active');
+      dash.classList.toggle('transit-hidden', noTransit);
       dash.classList.remove('pulse');
       void dash.offsetWidth; // restart animation
       dash.classList.add('pulse');
