@@ -604,7 +604,12 @@
 
       let html = '';
       const label = s.observance_label || 'Shabbat';
-      html += `<div class="parsha">${label.toLowerCase()}</div>`;
+      if (s.phase === 'active' && s.next_havdalah) {
+        html += `<div class="shabbat-label">${Current}</div>`;
+      } else if (s.next_candles) {
+        html += `<div class="shabbat-label">${Upcoming}</div>`;
+      }
+      html += `<div class="parsha">${label}</div>`;
 
       /*if (s.parsha) {
         html += `<div class="parsha">${s.parsha.name}</div>`;
