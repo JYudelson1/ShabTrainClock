@@ -55,6 +55,10 @@ bus_stops:
     label: "St John's & Rogers"
     routes: ["B44", "B44-SBS"]
 
+  - stop_code: "303567"   # St John's & Nostrand, westbound
+    label: "St John's & Nostrand"
+    routes: ["B45"]
+
   # Add more stops as desired. Note: each MTA stop_code is curb/direction-
   # specific, so to monitor both directions add a second entry with the
   # other side's stop_code.
